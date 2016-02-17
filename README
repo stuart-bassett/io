@@ -1,0 +1,66 @@
+libio: A library to access linux framebuffer console & evdev.
+Copyright (C) 2016 Stuart Bassett
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the license, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses>.
+
+FRAMEBUFFER (fb.h):
+
+	FrameBufferDevice *openFBDev(const char *path)
+
+	Opens the framebuffer device at path.
+	May fail if user is not in the video group (or otherwise cannot open the file named by path).
+	Will fail if standard input is not a tty.
+	Returns NULL on failure.
+
+	The FrameBufferDevice structure contains a few fields for applications to use:
+
+		xres, yres: the screen's horizontal and vertical resolution
+
+		numPixels: the number of pixels on the screen (xres * yres)
+		frameSize: the number of bytes in a frame (numPixels * sizeof(Pixel))
+
+		nextFrame: set this to the data of the new frame
+		lastFrame: this contains the previous frame
+
+	Don't touch other fields unless you know what you're doing.
+
+	The close function will close the framebuffer and free everything.
+	The swap function will cause nextFrame to be displayed on the screen, and nextFrame and lastFrame will be switched.
+	The formatPx function will turn a pixel into a uint32_t. It's used internally, so probably don't modify this unless you like funky colours.
+
+	Note that segfaults may make it difficult to reset your terminal or even get control of a different terminal.
+	You may find it useful to register the close function with atexit and to install a signal handler for SIGSEGV that simply calls exit.
+	Failing to close a frame buffer will likely make your terminal unusable.
+
+INPUT EVENTS (input.h):
+
+	InputEvent is equivalent to struct input_event from linux/input.h
+
+	InputDevice holds data about an input device:
+		name is the path to the device, and is used to identify the device
+		fd is the file descriptor associated with the device
+		if err is non-zero it then it corresponds to an error constant from errno.h
+	
+	InputDevices holds data about a set of input devices.
+	The only fields that should be modified directly are callback and callback_data.
+	callback is a pointer to a function that should be called when an event is available.
+	callback_data is a pointer that is passed to callback.
+
+	Your application must not modify an InputDevices structure from a callback for that structure.
+
+	If callback is called in response to a loopback event (which may be triggered internally) then the dev field will be NULL.
+	It is a mistake to assume a non-NULL dev.
+
+	You will need permission to access /dev/input/event* to use the default paths, usually this is restricted to root or members of the input group.
+	You can use openInputDevicesPaths to replay saved input events.
