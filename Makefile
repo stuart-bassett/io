@@ -15,21 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-.PHONY: all clean
+.PHONY: all clean example
 
 all: libio.so libio.a
 
 libio.so: fb.o input.o
-	$(CC) -shared -fPIC $(CFLAGS) -o libio.so -pthread $(LDFLAGS) fb.o input.o
+	$(CC) -shared -fPIC $(CFLAGS) $(LDFLAGS) -pthread fb.o input.o $(LDLIBS) -o libio.so
 
 libio.a: fb.o input.o
 	$(AR) sq libio.a fb.o input.o
 
 fb.o:
-	$(CC) -c -fPIC --std=c99 $(CFLAGS) -o fb.o fb.c
+	$(CC) -c -fPIC --std=gnu99 $(CFLAGS) fb.c -o fb.o
 
 input.o:
-	$(CC) -c -fPIC --std=c99 $(CFLAGS) -o input.o input.c
+	$(CC) -c -fPIC --std=gnu99 $(CFLAGS) input.c -o input.o
+
+example: libio.a
+	$(CC) --std=gnu99 $(CFLAGS) $(LDFLAGS) example.c libio.a -pthread $(LDLIBS) -o example
 
 clean:
-	$(RM) libio.so libio.a fb.o input.o
+	$(RM) libio.so libio.a fb.o input.o example
